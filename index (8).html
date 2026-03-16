@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShortCut AI — Podcast Shorts Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --surface2: #1a1a1a;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f0f0ee;
+      --muted: #888882;
+      --accent: #e8ff47;
+      --accent-dim: rgba(232,255,71,0.12);
+      --accent-border: rgba(232,255,71,0.3);
+      --blue: #4a9eff;
+      --blue-dim: rgba(74,158,255,0.1);
+      --green: #3ecf8e;
+      --green-dim: rgba(62,207,142,0.1);
+      --orange: #ff9f47;
+      --orange-dim: rgba(255,159,71,0.1);
+      --red: #ff5f57;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 60px;
+      background: rgba(10,10,10,0.85);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+    .logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+    .logo-dot { width: 8px; height: 8px; background: var(--accent); border-radius: 50%; }
+    .nav-badge { font-size: 11px; padding: 3px 10px; background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent-border); border-radius: 20px; }
+
+    /* HERO */
+    .hero {
+      padding: 120px 2rem 60px;
+      max-width: 860px;
+      margin: 0 auto;
+    }
+    .hero-tag {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+    .hero-tag-line { width: 24px; height: 1px; background: var(--accent); }
+    h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: clamp(36px, 6vw, 62px);
+      font-weight: 800;
+      line-height: 1.08;
+      letter-spacing: -0.02em;
+      margin-bottom: 1.25rem;
+    }
+    h1 em { color: var(--accent); font-style: normal; }
+    .hero-sub {
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 520px;
+      margin-bottom: 2.5rem;
+      font-weight: 300;
+    }
+
+    /* ANALYZER BOX */
+    .analyzer-box {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 860px;
+      margin: 0 auto 3rem;
+    }
+    .input-group { display: flex; gap: 10px; margin-bottom: 1rem; }
+    .url-input {
+      flex: 1;
+      height: 52px;
+      padding: 0 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      transition: border-color 0.2s;
+    }
+    .url-input:focus { outline: none; border-color: var(--accent); }
+    .url-input::placeholder { color: var(--muted); }
+    .btn-analyze {
+      height: 52px;
+      padding: 0 28px;
+      background: var(--accent);
+      color: #0a0a0a;
+      border: none;
+      border-radius: var(--radius);
+      font-family: 'Syne', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: 0.02em;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-analyze:hover { opacity: 0.88; }
+    .btn-analyze:active { transform: scale(0.98); }
+    .btn-analyze:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .options-bar { display: flex; gap: 8px; flex-wrap: wrap; }
+    .opt {
+      display: flex; align-items: center; gap: 5px;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 12px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+    }
+    .opt.on { background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent); }
+    .opt-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+    /* STATUS */
+    .status-wrap {
+      display: none; align-items: center; gap: 12px;
+      padding: 14px 18px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin: 1rem 0;
+      font-size: 14px; color: var(--muted);
+    }
+    .status-wrap.show { display: flex; }
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .err-wrap {
+      display: none;
+      padding: 12px 16px;
+      background: rgba(255,95,87,0.08);
+      border: 1px solid rgba(255,95,87,0.3);
+      border-radius: var(--radius);
+      color: var(--red);
+      font-size: 14px;
+      margin: 1rem 0;
+    }
+    .err-wrap.show { display: block; }
+
+    /* STATS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 2rem 0 1.5rem;
+    }
+    .stat-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.25rem;
+    }
+    .stat-v { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 700; color: var(--text); }
+    .stat-l { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+    /* RESULTS HEADER */
+    .results-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;
+    }
+    .results-title { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 600; color: var(--text); }
+    .export-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn-exp {
+      height: 34px; padding: 0 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; transition: all 0.15s;
+      font-weight: 500;
+    }
+    .btn-cap { background: var(--blue-dim); border: 1px solid rgba(74,158,255,0.3); color: var(--blue); }
+    .btn-cap:hover { background: rgba(74,158,255,0.18); }
+    .btn-prm { background: var(--green-dim); border: 1px solid rgba(62,207,142,0.3); color: var(--green); }
+    .btn-prm:hover { background: rgba(62,207,142,0.18); }
+    .btn-ffm { background: var(--orange-dim); border: 1px solid rgba(255,159,71,0.3); color: var(--orange); }
+    .btn-ffm:hover { background: rgba(255,159,71,0.18); }
+
+    /* CLIPS */
+    .clips-list { display: flex; flex-direction: column; gap: 10px; }
+    .clip-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .clip-card:hover { border-color: var(--border2); }
+    .clip-card.open { border-color: var(--border2); }
+    .clip-head {
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px; cursor: pointer;
+    }
+    .clip-num {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--surface);
+      font-family: 'Syne', sans-serif;
+      font-size: 13px; font-weight: 700;
+      color: var(--muted);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .clip-card.open .clip-num { background: var(--accent-dim); color: var(--accent); }
+    .clip-info { flex: 1; min-width: 0; }
+    .clip-title { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .clip-meta-row { display: flex; align-items: center; gap: 8px; margin-top: 3px; flex-wrap: wrap; }
+    .clip-ts { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; }
+    .clip-speaker { font-size: 12px; color: var(--muted); }
+    .moment-chip {
+      font-size: 11px; padding: 1px 8px; border-radius: 8px; font-weight: 500;
+    }
+    .m-insight { background: var(--blue-dim); color: var(--blue); }
+    .m-story { background: var(--green-dim); color: var(--green); }
+    .m-debate { background: rgba(255,95,87,0.1); color: var(--red); }
+    .m-tip { background: var(--orange-dim); color: var(--orange); }
+    .clip-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+    .viral-wrap { display: flex; align-items: center; gap: 6px; }
+    .viral-track { width: 52px; height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .viral-fill { height: 100%; border-radius: 2px; }
+    .v-hi .viral-fill { background: var(--green); }
+    .v-hi .viral-num { color: var(--green); }
+    .v-md .viral-fill { background: var(--orange); }
+    .v-md .viral-num { color: var(--orange); }
+    .v-lo .viral-fill { background: var(--red); }
+    .v-lo .viral-num { color: var(--red); }
+    .viral-num { font-size: 12px; font-weight: 500; min-width: 32px; }
+    .dur-chip { font-size: 11px; padding: 2px 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--muted); }
+    .chev { font-size: 11px; color: var(--muted); transition: transform 0.2s; }
+    .clip-card.open .chev { transform: rotate(180deg); }
+
+    /* CLIP BODY */
+    .clip-body {
+      display: none;
+      padding: 0 16px 16px;
+      border-top: 1px solid var(--border);
+    }
+    .clip-card.open .clip-body { display: block; }
+    .body-lbl {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--muted); font-weight: 500;
+      margin: 14px 0 7px;
+    }
+    .hook-card {
+      background: var(--surface);
+      border: 1px solid var(--accent-border);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 14px; color: var(--text); line-height: 1.7;
+    }
+    .sub-rows { display: flex; flex-direction: column; gap: 5px; }
+    .sub-row { display: flex; gap: 12px; align-items: flex-start; }
+    .sub-ts { font-size: 11px; color: var(--accent); font-family: 'DM Mono', monospace; min-width: 36px; padding-top: 2px; }
+    .sub-text { font-size: 13px; color: var(--text); line-height: 1.6; }
+    .why-box { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .tags-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag-chip { font-size: 12px; padding: 3px 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; color: var(--muted); }
+    .clip-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .btn-clip-act {
+      height: 33px; padding: 0 14px;
+      border: 1px solid var(--border2);
+      border-radius: var(--radius-sm);
+      font-size: 12px; cursor: pointer;
+      background: transparent; color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+    }
+    .btn-clip-act:hover { background: var(--surface); color: var(--text); border-color: var(--border2); }
+    .btn-clip-blue { color: var(--blue); border-color: rgba(74,158,255,0.3); }
+    .btn-clip-blue:hover { background: var(--blue-dim); color: var(--blue); }
+
+    /* EMPTY */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+    .empty-icon { font-size: 42px; margin-bottom: 1rem; opacity: 0.3; }
+    .empty-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .empty-sub { font-size: 13px; color: var(--muted); opacity: 0.6; }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--border);
+      margin-top: 4rem;
+      opacity: 0.6;
+    }
+
+    /* FEATURES ROW */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      max-width: 860px;
+      margin: 0 auto 3rem;
+    }
+    .feat {
+      background: var(--surface);
+      padding: 1.5rem;
+    }
+    .feat-icon { font-size: 20px; margin-bottom: 10px; }
+    .feat-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+    .feat-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    @media (max-width: 640px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .features { grid-template-columns: 1fr; }
+      .input-group { flex-direction: column; }
+      .btn-analyze { height: 46px; }
+      h1 { font-size: 32px; }
+    }
+
+    /* TOAST */
+    #toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 10px 18px;
+      font-size: 13px; color: var(--text);
+      display: none;
+      z-index: 999;
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    ShortCut AI
+  </div>
+  <span class="nav-badge">Beta</span>
+</nav>
+
+<main style="max-width:860px; margin:0 auto; padding:0 1.5rem;">
+  <div class="hero">
+    <div class="hero-tag"><div class="hero-tag-line"></div> Podcast Shorts Analyzer</div>
+    <h1>Ubah podcast panjang jadi <em>viral Shorts</em></h1>
+    <p class="hero-sub">Paste link YouTube podcast — AI langsung deteksi momen terbaik, generate subtitle, dan export siap edit ke CapCut atau Premiere.</p>
+  </div>
+
+  <div class="features">
+    <div class="feat">
+      <div class="feat-icon">✂️</div>
+      <div class="feat-title">Deteksi timestamp otomatis</div>
+      <div class="feat-desc">AI analisis seluruh konten dan tandai momen paling engaging.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">💬</div>
+      <div class="feat-title">Subtitle draft siap pakai</div>
+      <div class="feat-desc">Generate subtitle per clip lengkap dengan timing yang akurat.</div>
+    </div>
+    <div class="feat">
+      <div class="feat-icon">📦</div>
+      <div class="feat-title">Export CapCut & Premiere</div>
+      <div class="feat-desc">Download CSV, XML sequence, atau FFmpeg script langsung jalan.</div>
+    </div>
+  </div>
+
+  <div class="analyzer-box">
+    <div class="input-group">
+      <input class="url-input" id="url-in" type="text" placeholder="https://www.youtube.com/watch?v=..." />
+      <button class="btn-analyze" id="btn-run" onclick="run()">Analisis →</button>
+    </div>
+    <div class="options-bar" id="opts-bar">
+      <div class="opt on" onclick="tog('ts',this)"><span class="opt-dot"></span> Timestamp</div>
+      <div class="opt on" onclick="tog('sub',this)"><span class="opt-dot"></span> Subtitle</div>
+      <div class="opt on" onclick="tog('viral',this)"><span class="opt-dot"></span> Viral score</div>
+      <div class="opt on" onclick="tog('hook',this)"><span class="opt-dot"></span> Opening hook</div>
+      <div class="opt on" onclick="tog('moment',this)"><span class="opt-dot"></span> Tipe momen</div>
+      <div class="opt on" onclick="tog('speaker',this)"><span class="opt-dot"></span> Speaker</div>
+    </div>
+
+    <div class="status-wrap" id="st-bar">
+      <div class="spinner"></div>
+      <span id="st-txt">Menganalisis...</span>
+    </div>
+    <div class="err-wrap" id="err-box"></div>
+
+    <div id="results" style="display:none;">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="results-head">
+        <div class="results-title" id="res-title">Clip tersedia</div>
+        <div class="export-btns">
+          <button class="btn-exp btn-cap" onclick="exportCapCut()">⬇ CapCut CSV</button>
+          <button class="btn-exp btn-prm" onclick="exportPremiere()">⬇ Premiere XML</button>
+          <button class="btn-exp btn-ffm" onclick="exportFFmpeg()">⬇ FFmpeg Script</button>
+        </div>
+      </div>
+      <div class="clips-list" id="clips-list"></div>
+    </div>
+
+    <div class="empty-state" id="empty">
+      <div class="empty-icon">🎙️</div>
+      <div class="empty-title">Siap analisis podcast kamu</div>
+      <div class="empty-sub">Paste URL YouTube di atas dan klik Analisis</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  ShortCut AI — Powered by Claude · Untuk penggunaan terbaik, gunakan video podcast dengan durasi 20 menit ke atas.
+</footer>
+
+<div id="toast"></div>
+
+<script>
+const opts = { ts:true, sub:true, viral:true, hook:true, moment:true, speaker:true };
+let allClips = [], videoMeta = {};
+
+function tog(k, el) { opts[k]=!opts[k]; el.classList.toggle('on',opts[k]); }
+function setStatus(t) { document.getElementById('st-bar').classList.add('show'); document.getElementById('st-txt').textContent=t; }
+function hideStatus() { document.getElementById('st-bar').classList.remove('show'); }
+function showErr(t) { const e=document.getElementById('err-box'); e.textContent=t; e.classList.add('show'); }
+function hideErr() { document.getElementById('err-box').classList.remove('show'); }
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display='block';
+  setTimeout(()=>{ t.style.display='none'; }, 2200);
+}
+
+function scoreClass(s) { return s>=75?'v-hi':s>=50?'v-md':'v-lo'; }
+const momentMap = { insight:'m-insight', story:'m-story', debate:'m-debate', tip:'m-tip' };
+const momentLabel = { insight:'Insight', story:'Cerita', debate:'Debat', tip:'Tips' };
+
+async function run() {
+  const url = document.getElementById('url-in').value.trim();
+  if (!url) { showErr('Masukkan URL YouTube terlebih dahulu.'); return; }
+  hideErr();
+  document.getElementById('results').style.display='none';
+  document.getElementById('empty').style.display='none';
+  document.getElementById('btn-run').disabled=true;
+  const videoId = (url.match(/(?:v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})/)||[])[1]||'unknown';
+
+  const prompt = `Kamu adalah AI editor konten podcast profesional. User memberikan URL podcast YouTube: "${url}" (ID: ${videoId}).
+
+Simulasikan bahwa kamu telah mendengarkan podcast berdurasi 45-120 menit. Buat analisis REALISTIS. Kembalikan HANYA JSON ini, tidak ada teks lain:
+
+{
+  "video_title": "judul podcast realistis dengan nama host/tamu",
+  "video_duration": "1:23:45",
+  "clips": [
+    {
+      "title": "judul clip singkat max 8 kata",
+      "start_ts": "05:20",
+      "end_ts": "06:50",
+      "duration_sec": 90,
+      "viral_score": 88,
+      "moment_type": "insight",
+      "speaker": "Nama Host",
+      "hook": "kalimat pembuka 1-2 kalimat yang powerful dalam bahasa Indonesia",
+      "subtitles": [
+        {"ts":"0:00","text":"teks subtitle natural"},
+        {"ts":"0:06","text":"lanjutan..."},
+        {"ts":"0:12","text":"..."},
+        {"ts":"0:18","text":"..."},
+        {"ts":"0:24","text":"..."},
+        {"ts":"0:30","text":"..."},
+        {"ts":"0:36","text":"..."}
+      ],
+      "tags": ["tag1","tag2","tag3","tag4","tag5"],
+      "why_viral": "alasan singkat 1 kalimat kenapa clip ini potensial viral"
+    }
+  ]
+}
+
+moment_type pilihan: insight, story, debate, tip
+Buat 5-7 clips. Timestamp berurutan dan realistis untuk podcast panjang. Semua teks bahasa Indonesia. Viral score bervariasi 60-96. HANYA JSON.`;
+
+  try {
+    setStatus('AI sedang menganalisis momen terbaik podcast...');
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, messages:[{role:'user',content:prompt}] })
+    });
+    const data = await resp.json();
+    const raw = data.content.map(b=>b.text||'').join('');
+    const parsed = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    allClips = parsed.clips;
+    videoMeta = { title: parsed.video_title, duration: parsed.video_duration, url };
+    hideStatus();
+    renderResults(parsed);
+  } catch(e) {
+    hideStatus();
+    showErr('Gagal menganalisis. Pastikan URL valid dan coba lagi.');
+    document.getElementById('empty').style.display='block';
+  }
+  document.getElementById('btn-run').disabled=false;
+}
+
+function renderResults(parsed) {
+  const clips = parsed.clips;
+  const totalSec = clips.reduce((s,c)=>s+(c.duration_sec||60),0);
+  const avgScore = Math.round(clips.reduce((s,c)=>s+c.viral_score,0)/clips.length);
+  const topScore = Math.max(...clips.map(c=>c.viral_score));
+
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-v">${clips.length}</div><div class="stat-l">Clip Short</div></div>
+    <div class="stat-card"><div class="stat-v">${Math.floor(totalSec/60)}m ${totalSec%60}s</div><div class="stat-l">Total konten</div></div>
+    <div class="stat-card"><div class="stat-v">${avgScore}%</div><div class="stat-l">Avg viral score</div></div>
+    <div class="stat-card"><div class="stat-v">${topScore}%</div><div class="stat-l">Score tertinggi</div></div>
+  `;
+
+  const short = parsed.video_title.length > 45 ? parsed.video_title.substring(0,45)+'…' : parsed.video_title;
+  document.getElementById('res-title').textContent = `${clips.length} clip dari "${short}"`;
+
+  const list = document.getElementById('clips-list');
+  list.innerHTML = '';
+  clips.forEach((clip, i) => {
+    const sc = scoreClass(clip.viral_score);
+    const mt = momentMap[clip.moment_type]||'m-insight';
+    const ml = momentLabel[clip.moment_type]||clip.moment_type;
+    const card = document.createElement('div');
+    card.className = 'clip-card';
+
+    let body = '';
+    if (opts.hook) body += `<div class="body-lbl">Opening hook</div><div class="hook-card">${clip.hook}</div>`;
+    if (opts.sub && clip.subtitles) {
+      body += `<div class="body-lbl">Subtitle draft</div><div class="sub-rows">`;
+      clip.subtitles.forEach(s => { body += `<div class="sub-row"><span class="sub-ts">${s.ts}</span><span class="sub-text">${s.text}</span></div>`; });
+      body += `</div>`;
+    }
+    if (clip.why_viral) body += `<div class="body-lbl">Kenapa potensial viral</div><div class="why-box">${clip.why_viral}</div>`;
+    body += `<div class="body-lbl">Tags</div><div class="tags-row">${clip.tags.map(t=>`<span class="tag-chip">#${t}</span>`).join('')}</div>`;
+    body += `<div class="clip-actions">
+      <button class="btn-clip-act btn-clip-blue" onclick="copySubs(${i})">Salin subtitle</button>
+      <button class="btn-clip-act btn-clip-blue" onclick="copyTS(${i})">Salin timestamp</button>
+      <button class="btn-clip-act" onclick="showFFmpegOne(${i})">Lihat FFmpeg clip ini</button>
+    </div>`;
+
+    card.innerHTML = `
+      <div class="clip-head" onclick="this.parentElement.classList.toggle('open')">
+        <div class="clip-num">${i+1}</div>
+        <div class="clip-info">
+          <div class="clip-title">${clip.title}</div>
+          <div class="clip-meta-row">
+            ${opts.ts ? `<span class="clip-ts">${clip.start_ts} → ${clip.end_ts}</span>` : ''}
+            ${opts.speaker && clip.speaker ? `<span class="clip-speaker">· ${clip.speaker}</span>` : ''}
+            ${opts.moment ? `<span class="moment-chip ${mt}">${ml}</span>` : ''}
+          </div>
+        </div>
+        <div class="clip-right">
+          ${opts.viral ? `<div class="viral-wrap ${sc}"><div class="viral-track"><div class="viral-fill" style="width:${clip.viral_score}%"></div></div><span class="viral-num">${clip.viral_score}%</span></div>` : ''}
+          <span class="dur-chip">${clip.duration_sec}s</span>
+          <span class="chev">▼</span>
+        </div>
+      </div>
+      <div class="clip-body">${body}</div>
+    `;
+    list.appendChild(card);
+  });
+
+  document.getElementById('results').style.display='block';
+}
+
+function copySubs(i) {
+  const c = allClips[i]; if(!c?.subtitles) return;
+  navigator.clipboard.writeText(c.subtitles.map(s=>`[${s.ts}] ${s.text}`).join('\n')).then(()=>toast('Subtitle disalin!')).catch(()=>{});
+}
+function copyTS(i) {
+  const c = allClips[i];
+  navigator.clipboard.writeText(`${c.start_ts} - ${c.end_ts} | ${c.title}`).then(()=>toast('Timestamp disalin!')).catch(()=>{});
+}
+function showFFmpegOne(i) {
+  const c = allClips[i];
+  const safe = c.title.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,25);
+  const cmd = `ffmpeg -i "input_video.mp4" -ss ${c.start_ts} -to ${c.end_ts} \\\n  -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" \\\n  -c:v libx264 -crf 18 -preset fast -c:a aac -b:a 128k \\\n  "clip_${String(i+1).padStart(2,'0')}_${safe}.mp4"`;
+  alert(cmd);
+}
+function tsToSec(ts) { const p=ts.split(':').map(Number); return p.length===3?p[0]*3600+p[1]*60+p[2]:p[0]*60+p[1]; }
+
+function exportCapCut() {
+  if(!allClips.length){toast('Analisis dulu ya!');return;}
+  let csv='Clip,Title,Start,End,Duration(s),ViralScore,MomentType,Speaker,Hook,Tags\n';
+  allClips.forEach((c,i)=>{ csv+=`${i+1},"${c.title}","${c.start_ts}","${c.end_ts}",${c.duration_sec},${c.viral_score}%,${c.moment_type},"${c.speaker||''}","${c.hook}","${c.tags.join(' ')}"\n`; });
+  dl('capcut_clips.csv',csv,'text/csv');
+  toast('CapCut CSV diunduh!');
+}
+function exportPremiere() {
+  if(!allClips.length){toast('Analisis dulu ya!');return;}
+  let xml=`<?xml version="1.0" encoding="UTF-8"?>\n<xmeml version="4">\n<sequence>\n<name>${videoMeta.title||'Podcast Shorts'}</name>\n<media><video><track>\n`;
+  allClips.forEach((c,i)=>{ const s=tsToSec(c.start_ts),e=tsToSec(c.end_ts); xml+=`  <clipitem id="clip${i+1}">\n    <name>${c.title}</name>\n    <start>${s*25}</start><end>${e*25}</end><in>${s*25}</in><out>${e*25}</out>\n  </clipitem>\n`; });
+  xml+=`</track></video></media>\n</sequence>\n</xmeml>`;
+  dl('premiere_sequence.xml',xml,'text/xml');
+  toast('Premiere XML diunduh!');
+}
+function exportFFmpeg() {
+  if(!allClips.length){toast('Analisis dulu ya!');return;}
+  let sh=`#!/bin/bash\n# ShortCut AI — FFmpeg Export\n# Source: ${videoMeta.url||'video'}\nINPUT="input_video.mp4"\n\n`;
+  allClips.forEach((c,i)=>{ const safe=c.title.toLowerCase().replace(/[^a-z0-9]/g,'_').substring(0,25); sh+=`# Clip ${i+1}: ${c.title} (${c.viral_score}% viral)\nffmpeg -i "$INPUT" -ss ${c.start_ts} -to ${c.end_ts} \\\n  -vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2" \\\n  -c:v libx264 -crf 18 -preset fast -c:a aac -b:a 128k \\\n  "clip_${String(i+1).padStart(2,'0')}_${safe}.mp4"\n\n`; });
+  dl('ffmpeg_export.sh',sh,'text/plain');
+  toast('FFmpeg script diunduh!');
+}
+function dl(name,content,type) {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name; a.click();
+}
+</script>
+</body>
+</html>
